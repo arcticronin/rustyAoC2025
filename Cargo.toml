@@ -1,0 +1,33 @@
+[package]
+name = "AoC"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+# 1. ITERATORS & BASICS
+# The "standard library++". Adds .tuple_windows(), .unique(), .permutations()
+itertools = "0.13"
+
+# 2. PARSING
+# For regex parsing (e.g. "pos=<1,2> vel=<-1,3>")
+regex = "1.11"
+# For complex parsing (only needed for very hard parsing days)
+nom = "7.1"
+# Useful for defining regexes once (static) rather than re-compiling in loops
+lazy_static = "1.5"
+
+# 3. MATH & GRIDS
+# Fast vector math (Vec2, IVec2). Great for 2D grids and coordinate addition.
+glam = "0.29"
+# Simple 2D grid container if you prefer 2D arrays over coordinate math.
+grid = "0.14"
+# Least common multiple (lcm) and gcd - often needed for cycle detection days.
+num = "0.4"
+
+# 4. PATHFINDING & GRAPHS
+# For Dijkstra, A*, BFS, DFS algorithms.
+petgraph = "0.6"
+
+# 5. PERFORMANCE
+# Parallel iterators. Change .iter() to .par_iter() for free speedups.
+rayon = "1.10"
