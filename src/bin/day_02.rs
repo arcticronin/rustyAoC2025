@@ -1,46 +1,56 @@
 use itertools::Itertools;
-use petgraph::visit::depth_first_search;
 
 #[derive(Debug)]
-struct ID_Range {
-    first: ID_instance,
-    last: ID_instance,
+struct IDRange {
+    first: IDInstance,
+    last: IDInstance,
 }
-impl ID_Range {
-    fn new(first: ID_instance, last: ID_instance) -> Self {
+
+impl IDRange {
+    pub fn new(first: IDInstance, last: IDInstance) -> Self {
         Self { first, last }
     }
-    fn sum_invalid_ids(&self) -> u64 {
-        let mut sum: u64 = 0;
-        if self.first.valid == false {
-            sum += self.first.number as u64;
-        }
-        if self.last.valid == false {
-            sum += self.last.number as u64;
-        }
-        sum
+    pub fn sum_invalid_ids(&self) -> u64 {
+        let range_vector: Vec<u64> = (self.first.number..=self.last.number).collect();
+        range_vector
+            .into_iter()
+            .filter(|&num| num.to_string().len() % 2 == 0)
+            .map(|num| IDInstance::new(num))
+            .filter(|id| !id.valid)
+            .map(|id| id.number)
+            .sum()
+    }
+    pub fn sum_part2_criteria(&self) -> u64 {
+        (self.first.number..=self.last.number)
+            .filter(|&n| {
+                let s = n.to_string();
+                let len = s.len() as u64;
+                let divisors = get_divisors(len);
+
+                // We keep this number if ANY divisor results in equal chunks
+                divisors.iter().any(|&d| {
+                    let chunks = split_equally(d, &s);
+                    equal_check_shortcirc(&chunks)
+                })
+            })
+            .sum()
     }
 }
 
 #[derive(Debug)]
-struct ID_instance {
+struct IDInstance {
     number: u64,
     valid: bool,
 }
 
-impl ID_instance {
-    // 1. The public constructor
+impl IDInstance {
     pub fn new(number: u64) -> Self {
         Self {
             number,
-            // We call the private helper here
             valid: Self::validate(number),
         }
     }
 
-    // 2. The private validation logic
-    // This is not "pub", so only ID_instance can use it.
-    // We call it 'validate' to be descriptive.
     fn validate(number: u64) -> bool {
         let digits: Vec<u32> = number
             .to_string()
@@ -54,7 +64,6 @@ impl ID_instance {
 
         let half = digits.len() / 2;
 
-        // If it meets the condition, it is NOT valid (return false)
         if digits.len() % 2 == 0 && digits[..half] == digits[half..] {
             false
         } else {
@@ -63,37 +72,79 @@ impl ID_instance {
     }
 }
 
-fn main() {
-    // Note: ensure this path exists or use a hardcoded string for testing
-    // let input = include_str!("../../inputs/input_02/input.txt");
-    let input = "11-22,95-115";
-    println!("{}", part12(input));
+fn get_divisors(n: u64) -> Vec<u64> {
+    let mut divisors = Vec::new();
+    for i in 1..=n/2 {
+        if n % i == 0 {
+            divisors.push(i);
+        }
+    }
+    divisors
 }
 
-fn part12(input: &str) -> String {
-    // 1. Clean the input (remove newlines if any) and split by commas
-    let ranges: Vec<ID_Range> = input
-        .replace(['\n', '\r', ' '], "") 
-        .split(',')
-        .filter(|s| !s.is_empty()) 
-        .map(|s| {
-            // 2. Parse "start-end"
-            let (start_str, end_str) = s.split_once('-').expect("Invalid range format");
-            let start_num: u64 = start_str.parse().expect("Invalid start number");
-            let end_num: u64 = end_str.parse().expect("Invalid end number");
+fn split_equally(chunk_size: u64, s: &str) -> Vec<String> {
+    let mut chunks = Vec::new();
+    if chunk_size == 0 {
+        return chunks;
+    }
+    for chunk in s.as_bytes().chunks(chunk_size as usize) {
+        let str_chunk = std::str::from_utf8(chunk).unwrap();
+        chunks.push(str_chunk.to_string());
+    }
+    chunks
+}
 
-            // 3. Create instances
-            ID_Range::new(ID_instance::new(start_num), ID_instance::new(end_num))
-        })
-        .collect();
+fn equal_check_shortcirc(a: &Vec<String>) -> bool {
+    if a.is_empty() {
+        return false;
+    }
+    let first = &a[0];
+    a.iter().all(|item| item == first)
+}
 
-    // 4. Implement counting logic
+fn main() {
+    // Note: ensure this path exists or use a hardcoded string for testing
+    let input = include_str!("../../inputs/input_02/input.txt");
+    
+    println!("{}", part1(input));
+    println!("{}", part2(input));
+}
+
+fn part1(input: &str) -> String {
+    let ranges: Vec<IDRange> = parse_ranges(input);
+
     let sum_invalid_ids: u64 = ranges
         .iter()
         .map(|range| range.sum_invalid_ids())
-        .sum(); // You can also let Rust infer the type if you type the variable
+        .sum();
         
     format!("Part1 sum of Invalid IDs: {}", sum_invalid_ids)
+}
+
+fn part2(input: &str) -> String {
+    let ranges: Vec<IDRange> = parse_ranges(input);
+
+    let sum_equal_splits: u64 = ranges
+        .iter()
+        .map(|range| range.sum_part2_criteria())
+        .sum();
+
+    format!("Part2 sum of Equal Split IDs: {}", sum_equal_splits)
+}
+
+// Extracted parsing logic since both parts use it
+fn parse_ranges(input: &str) -> Vec<IDRange> {
+    input
+        .replace(['\n', '\r', ' '], "")
+        .split(',')
+        .filter(|s| !s.is_empty())
+        .map(|s| {
+            let (start_str, end_str) = s.split_once('-').expect("Invalid range format");
+            let start_num: u64 = start_str.parse().expect("Invalid start number");
+            let end_num: u64 = end_str.parse().expect("Invalid end number");
+            IDRange::new(IDInstance::new(start_num), IDInstance::new(end_num))
+        })
+        .collect()
 }
 
 #[cfg(test)]
@@ -105,9 +156,17 @@ mod tests {
         let example = "11-22,95-115,998-1012,1188511880-1188511890,222220-222224,
 1698522-1698528,446443-446449,38593856-38593862,565653-565659,
 824824821-824824827,2121212118-2121212124";
-        print!("{}",example);
-        // This will print the output when you run: cargo test -- --nocapture
-        let result = part12(example);
-        println!("Result: {}", result);
+        
+        let result = part1(example);
+        println!("Result Part 1: {}", result);
+    }
+
+    #[test]
+    fn test_part2_example() {
+        // I added '121212' which splits into 12,12,12 (sum should increase by 121212)
+        let example = "121210-121215"; 
+        let result = part2(example);
+        println!("Result Part 2: {}", result);
+        assert!(result.contains("121212"));
     }
 }
