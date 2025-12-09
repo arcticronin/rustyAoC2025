@@ -34,7 +34,7 @@ fn main() {
                 // We only check cells that are currently alive (1)
                 if padded[r][c] == 1 {
                     
-                    // Sum neighbors
+                    // kernel (8-connectivity)
                     let neighbor_sum = 
                         padded[r-1][c-1] + padded[r-1][c] + padded[r-1][c+1] +
                         padded[r][c-1]   + /* center */     padded[r][c+1] +

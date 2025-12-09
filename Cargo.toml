@@ -7,6 +7,7 @@ edition = "2024"
 # 1. ITERATORS & BASICS
 # The "standard library++". Adds .tuple_windows(), .unique(), .permutations()
 itertools = "0.13"
+ndarray = "0.17.1"
 
 # 2. PARSING
 # For regex parsing (e.g. "pos=<1,2> vel=<-1,3>")
